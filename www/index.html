@@ -1,21 +1,113 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-    <title>bksysnet@hcmut welcome</title>
-
-    <meta charset="utf-8" />
-    <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="stylesheet" href="css/styles.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AsynapRous P2P Chat</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@500;700&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/style.css">
 </head>
-
 <body>
-<div>
-    <h1>bksysnet@hcmut  Domain</h1>
-    <p>This domain is for use in illustrative examples in documents.
-    </p>
-  
-       <img src="images/welcome.png" alt="bksysnet at HCMUT" width="500" height="600">  
-</div>
+    <!-- Background Elements for Aesthetics -->
+    <div class="bg-orb orb-1"></div>
+    <div class="bg-orb orb-2"></div>
+    <div class="bg-orb orb-3"></div>
+
+    <!-- Setup / Login Modal -->
+    <div id="setup-modal" class="modal-overlay">
+        <div class="glass-card modal-content">
+            <h1 class="logo-text">AsynapRous</h1>
+            <p class="subtitle">Connect to the P2P Network</p>
+            
+            <div class="input-group">
+                <label>Tracker IP</label>
+                <input type="text" id="tracker-ip" value="127.0.0.1">
+            </div>
+            
+            <div class="input-group">
+                <label>Tracker Port</label>
+                <input type="number" id="tracker-port" value="7000">
+            </div>
+
+            <div class="input-group">
+                <label>Username</label>
+                <input type="text" id="username" placeholder="e.g. alice">
+            </div>
+
+            <div class="input-group">
+                <label>Password</label>
+                <input type="password" id="password" placeholder="••••••••">
+            </div>
+
+            <div class="modal-buttons">
+                <button id="connect-btn" class="primary-btn">Join Network</button>
+                <button id="register-btn" class="secondary-btn">Sign Up</button>
+            </div>
+            <div id="setup-error" class="error-msg hidden"></div>
+            <div id="setup-success" class="success-msg hidden"></div>
+        </div>
+    </div>
+
+    <!-- Main Chat Interface (Hidden initially) -->
+    <div id="app-container" class="app-layout hidden">
+        <!-- Sidebar: Peer List -->
+        <aside class="glass-panel sidebar">
+            <div class="sidebar-header">
+                <h2>Channels</h2>
+                <div class="user-status">
+                    <div class="status-dot online"></div>
+                    <span id="current-username">Logged In</span>
+                </div>
+            </div>
+            
+            <div class="peer-list-container">
+                <!-- Broadcast Channel -->
+                <div class="peer-item active" data-target="broadcast">
+                    <div class="peer-avatar broadcast-avatar">🌐</div>
+                    <div class="peer-info">
+                        <span class="peer-name">Broadcast (All)</span>
+                        <span class="peer-status">Public Channel</span>
+                    </div>
+                </div>
+                
+                <h3 class="section-title">Direct Messages</h3>
+                <div id="peer-list">
+                    <!-- Peers will be injected here by JS -->
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Chat Area -->
+        <main class="glass-panel chat-area">
+            <header class="chat-header">
+                <div class="chat-target-info">
+                    <h2 id="chat-title">Broadcast (All)</h2>
+                    <span id="chat-subtitle" class="subtitle">Public Channel</span>
+                </div>
+            </header>
+
+            <div id="message-history" class="message-container">
+                <!-- Messages will be injected here by JS -->
+            </div>
+
+            <footer class="chat-input-area">
+                <form id="chat-form">
+                    <input type="text" id="message-input" placeholder="Type a message..." autocomplete="off">
+                    <button type="submit" class="send-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                        </svg>
+                    </button>
+                </form>
+            </footer>
+        </main>
+    </div>
+
+    <script src="/app.js"></script>
 </body>
 </html>

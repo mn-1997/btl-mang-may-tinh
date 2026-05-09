@@ -274,7 +274,10 @@ class Response():
             base_dir = BASE_DIR + "static/"
             self.headers['Content-Type'] = 'image/{}'.format(sub_type)
         elif main_type == 'application':
-            base_dir = BASE_DIR + "apps/"
+            if sub_type == 'javascript':
+                base_dir = BASE_DIR + "static/"
+            else:
+                base_dir = BASE_DIR + "apps/"
             self.headers['Content-Type'] = 'application/{}'.format(sub_type)
         else:
             # Unknown MIME type — fall back to static/
@@ -378,15 +381,10 @@ class Response():
         base_dir = ""
 
         # Choose the right directory based on file type
-        if path.endswith('.html') or mime_type == 'text/html':
-            base_dir = self.prepare_content_type(mime_type='text/html')
-        elif mime_type == 'text/css':
-            base_dir = self.prepare_content_type(mime_type='text/css')
-        elif mime_type in ('application/json', 'application/octet-stream'):
-            base_dir = self.prepare_content_type(mime_type='application/json')
+        base_dir = self.prepare_content_type(mime_type=mime_type)
+        
+        if mime_type in ('application/json', 'application/octet-stream'):
             envelop_content = ""
-        else:
-            return self.build_notfound()
 
         # Read the file from disk
         content_length, content = self.build_content(path, base_dir)
