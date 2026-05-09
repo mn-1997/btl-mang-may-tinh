@@ -10,30 +10,29 @@
 # while attending the course
 #
 
-from collections import MutableMapping
+# Python 3.10+ moved MutableMapping from collections to collections.abc
+from collections.abc import MutableMapping
+
 
 class CaseInsensitiveDict(MutableMapping):
-    """The :class:`CaseInsensitiveDict<MutableMapping>` object, which 
-    contains a custom behavior of MutuableMapping.
+    """A dictionary where key lookups are case-insensitive.
+
+    Useful for HTTP headers, where 'Content-Type' and 'content-type'
+    should be treated as the same key.
 
     Usage::
 
-      >>> import tools
-      >>> word = CaseInsensitiveDict(status_code='404', msg="Not found")
-      >>> code = word['status_code']
-      >>> code 
-      404
+      >>> headers = CaseInsensitiveDict()
+      >>> headers['Content-Type'] = 'text/html'
+      >>> headers['content-type']
+      'text/html'
 
-      >>> msg = word['msg']
-      >>> s.send(r)
-      Not found
-
-      >>> print(word)
-      {'status_code': '404', 'msg': 'Not found'}
-
+      >>> 'CONTENT-TYPE' in headers
+      True
     """
 
     def __init__(self, *args, **kwargs):
+        # Store all keys in lowercase so lookups are case-insensitive
         self.store = {k.lower(): v for k, v in dict(*args, **kwargs).items()}
 
     def __getitem__(self, key):
@@ -50,3 +49,17 @@ class CaseInsensitiveDict(MutableMapping):
 
     def __len__(self):
         return len(self.store)
+
+    def __contains__(self, key):
+        """Check if a key exists, ignoring case."""
+        return key.lower() in self.store
+
+    def __repr__(self):
+        return str(self.store)
+
+    def get(self, key, default=None):
+        """Return the value for key if it exists, else return default."""
+        try:
+            return self[key]
+        except KeyError:
+            return default

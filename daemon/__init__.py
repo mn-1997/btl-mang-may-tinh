@@ -15,6 +15,19 @@ from .proxy import create_proxy
 from .asynaprous import AsynapRous
 from .response import Response
 from .request import Request
-from .backend import create_backend
 from .httpadapter import HttpAdapter
 from .dictionary import CaseInsensitiveDict
+from .auth import authenticate, validate_token, logout
+
+__all__ = [
+    "create_backend",
+    "create_proxy",
+    "AsynapRous",
+    "Response",
+    "Request",
+    "HttpAdapter",
+    "CaseInsensitiveDict",
+    "authenticate",
+    "validate_token",
+    "logout"
+]

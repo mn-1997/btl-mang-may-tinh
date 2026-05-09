@@ -18,6 +18,8 @@ This module provides a AsynapRous object to deploy RESTful url web app with rout
 """
 
 from .backend import create_backend
+from .auth import validate_token
+from .response import Response
 import asyncio
 import inspect
 
@@ -66,37 +68,70 @@ class AsynapRous:
         self.ip = ip
         self.port = port
 
-    def route(self, path, methods=['GET']):
+    def route(self, path, methods=['GET'], auth_required=False):
         """
         Decorator to register a route handler for a specific path and HTTP methods.
 
         :param path (str): The URL path to route.
         :param methods (list): A list of HTTP methods (e.g., ['GET', 'POST']) to bind.
+        :param auth_required (bool): If True, validates Bearer token before calling handler.
 
         :rtype: function - A decorator that registers the handler function.
         """
         def decorator(func):
+            # We don't store wrapper here directly, we wrap it
+            # so the wrapper executes when the route is invoked
+            
+            def sync_wrapper(headers, body):
+               print("[AsynapRous] running sync function...  [{}] {}".format(methods, path))
+               if auth_required:
+                   auth_header = headers.get('authorization', '')
+                   if auth_header.startswith('Bearer '):
+                       token = auth_header[7:]
+                       username = validate_token(token)
+                       if username:
+                           # Pass authenticated user to handler via custom header
+                           headers['_authenticated_user'] = username
+                       else:
+                           return Response.build_unauthorized("Invalid or expired token")
+                   else:
+                       return Response.build_unauthorized("Missing Bearer token")
+               
+               result = func(headers, body)
+               return result
+
+            async def async_wrapper(headers, body):
+               print("[AsynapRous] running Async function... [{}] {}".format(methods, path))
+               if auth_required:
+                   auth_header = headers.get('authorization', '')
+                   if auth_header.startswith('Bearer '):
+                       token = auth_header[7:]
+                       username = validate_token(token)
+                       if username:
+                           headers['_authenticated_user'] = username
+                       else:
+                           return Response.build_unauthorized("Invalid or expired token")
+                   else:
+                       return Response.build_unauthorized("Missing Bearer token")
+
+               result = await func(headers, body)
+               return result
+
+            # Wrap depending on if coroutine
+            if inspect.iscoroutinefunction(func):
+                wrapper = async_wrapper
+            else:
+                wrapper = sync_wrapper
+
+            # Store the wrapped function in routes
             for method in methods:
-                self.routes[(method.upper(), path)] = func
+                self.routes[(method.upper(), path)] = wrapper
 
             # Optional attach route metadata to the function
             func._route_path = path
             func._route_methods = methods
 
-            def sync_wrapper(*args, **kwargs):
-               print("[AsynapRous] running sync function...  [{}] {}".format(methods, path))
-               result = func(*args, **kwargs)
-               return result
-
-            async def async_wrapper(*args, **kwargs):
-               print("[AsynapRous] running Async function... [{}] {}".format(methods, path))
-               result = await func(*args, **kwargs)
-               return result
-
-            if inspect.iscoroutinefunction(func):
-               return async_wrapper
-            else:
-               return sync_wrapper
+            return wrapper
         return decorator
 
     def run(self):

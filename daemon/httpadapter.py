@@ -106,16 +106,25 @@ class HttpAdapter:
         resp = self.response
 
         # Handle the request
-        msg = conn.recv(1024).decode()
+        msg = conn.recv(4096).decode("utf-8")
         req.prepare(msg, routes)
         print("[HttpAdapter] Invoke handle_client connection {}".format(addr))
 
         # Handle request hook
         if req.hook:
-            #
-            # TODO: handle for App hook here
-            #
-            response = ""
+            # Handle for App hook here
+            try:
+                # Sync wrapper will be called
+                result = req.hook(req.headers, req.body)
+                response = resp.build_response(req) # Fallback if not returning properly
+                if isinstance(result, bytes):
+                    # We assume it is a raw response if bytes
+                    response = result
+            except Exception as e:
+                response = Response.build_json_error(500, str(e))
+        else:
+            # Default file serving behavior if no hook
+            response = resp.build_response(req)
 
         #print("[HttpAdapter] Response content {}".format(response))
         conn.sendall(response)
@@ -129,38 +138,72 @@ class HttpAdapter:
         invokes the appropriate route handler if available, builds the response,
         and sends it back to the client.
 
-        :param conn (socket): The client socket connection.
-        :param addr (tuple): The client's address.
-        :param routes (dict): The route mapping for dispatching requests.
+        :param reader: The stream reader.
+        :param writer: The stream writer.
         """
         # Request handler
         req = self.request
         # Response handler
         resp = self.response
 
-        print("[HttpAdapter] Invoke handle_client_coroutine connection {})".format(addr))
         addr = writer.get_extra_info("peername")
+        print("[HttpAdapter] Invoke handle_client_coroutine connection {}".format(addr))
 
-        # TODO Handle the request asynchronously
-        msg = await reader.read(1024)
-
-
-        req.prepare(msg.decode("utf-8"), routes={})
+        # Handle the request asynchronously
+        # Read until we have the headers (separated by \r\n\r\n)
+        msg_bytes = await reader.read(4096)
+        if not msg_bytes:
+            writer.close()
+            return
+            
+        msg = msg_bytes.decode("utf-8", errors="ignore")
+        
+        # Parse initial request
+        req.prepare(msg, self.routes)
+        
+        # Check if we need to read more for the body
+        content_length = int(req.headers.get("Content-Length", 0))
+        current_body_len = len(req.body.encode("utf-8"))
+        
+        while current_body_len < content_length:
+            chunk = await reader.read(4096)
+            if not chunk:
+                break
+            chunk_str = chunk.decode("utf-8", errors="ignore")
+            req.body += chunk_str
+            current_body_len += len(chunk)
 
         # Handle request hook
+        response = b""
         if req.hook:
-            #
-            # TODO: handle for App hook here
-            #
-            response = ""
-
-        # Build response
-        #print("[HttpAdapter] Start **ASYNC** build_response with type {}".format(type(req)))
-        response = resp.build_response(req)
+            try:
+                # Dispatch to handler function
+                if inspect.iscoroutinefunction(req.hook):
+                    result = await req.hook(req.headers, req.body)
+                else:
+                    result = req.hook(req.headers, req.body)
+                    
+                if isinstance(result, bytes):
+                    # The route handler returned a complete HTTP response (e.g. from build_json_ok)
+                    response = result
+                else:
+                    # Fallback wrapper if just returning dict
+                    response = Response.build_json_ok(result)
+            except Exception as e:
+                print(f"[HttpAdapter] Error in hook: {e}")
+                response = Response.build_json_error(500, str(e))
+        else:
+            if req.method == 'OPTIONS':
+                 response = Response.build_cors_preflight()
+            else:
+                 # Default file serving behavior
+                 response = resp.build_response(req)
 
         # Send all the response asynchronously
         writer.write(response)
         await writer.drain()
+        writer.close()
+
 
     @property
     def extract_cookies(self, req, resp):
