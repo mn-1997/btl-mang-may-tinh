@@ -13,19 +13,7 @@
 """
 daemon.proxy
 ~~~~~~~~~~~~~~~~~
-
-This module implements a simple proxy server using Python's socket and threading libraries.
-It routes incoming HTTP requests to backend services based on hostname mappings and returns
-the corresponding responses to clients.
-
-Requirement:
------------------
-- socket: provides socket networking interface.
-- threading: enables concurrent client handling via threads.
-- response: customized :class: `Response <Response>` utilities.
-- httpadapter: :class: `HttpAdapter <HttpAdapter >` adapter for HTTP request processing.
-- dictionary: :class: `CaseInsensitiveDict <CaseInsensitiveDict>` for managing headers and cookies.
-
+A simple asynchronous proxy server that forwards requests to backend servers.
 """
 import socket
 import threading
@@ -34,8 +22,8 @@ from .response import *
 from .httpadapter import HttpAdapter
 from .dictionary import CaseInsensitiveDict
 
-#: A dictionary mapping hostnames to backend IP and port tuples.
-#: Used to determine routing targets for incoming requests.
+# Maps hostnames to backend IP and port
+
 PROXY_PASS = {
     "192.168.56.103:8080": ('192.168.56.103', 9000),
     "app1.local": ('192.168.56.103', 9001),
@@ -44,16 +32,8 @@ PROXY_PASS = {
 
 
 async def forward_request(host, port, request_bytes):
-    """
-    Forwards an HTTP request to a backend server asynchronously and retrieves the response.
+    # Send request to backend and get response
 
-    :params host (str): IP address of the backend server.
-    :params port (int): port number of the backend server.
-    :params request_bytes (bytes): incoming HTTP request.
-
-    :rtype bytes: Raw HTTP response from the backend server. If the connection
-                  fails, returns a 502 Bad Gateway response.
-    """
     try:
         reader, writer = await asyncio.open_connection(host, port)
         writer.write(request_bytes)
@@ -86,14 +66,8 @@ async def forward_request(host, port, request_bytes):
 
 
 def resolve_routing_policy(hostname, routes):
-    """
-    Handles an routing policy to return the matching proxy_pass.
-    It determines the target backend to forward the request to.
+    # Decide which backend server to use based on the hostname
 
-    :params host (str): IP address of the request target server.
-    :params port (int): port number of the request target server.
-    :params routes (dict): dictionary mapping hostnames and location.
-    """
 
     print(hostname)
     proxy_map, policy = routes.get(hostname,('127.0.0.1:9000','round-robin'))
@@ -106,21 +80,11 @@ def resolve_routing_policy(hostname, routes):
         if len(proxy_map) == 0:
             print("[Proxy] Emtpy resolved routing of hostname {}".format(hostname))
             print("Empty proxy_map result")
-            # TODO: implement the error handling for non mapped host
-            #       the policy is design by team, but it can be 
-            #       basic default host in your self-defined system
-            # Use a dummy host to raise an invalid connection
-            proxy_host = '127.0.0.1'
-            proxy_port = '9000'
-        elif len(proxy_map) == 1:
-            proxy_host, proxy_port = proxy_map[0].split(":", 2)
-        #elif: # apply the policy handling 
-        #   proxy_map
-        #   policy
         else:
-            # Out-of-handle mapped host
+            # Default fallback
             proxy_host = '127.0.0.1'
             proxy_port = '9000'
+
     else:
         print("[Proxy] resolve route of hostname {} is a singulair to".format(hostname))
         proxy_host, proxy_port = proxy_map.split(":", 2)
@@ -128,14 +92,8 @@ def resolve_routing_policy(hostname, routes):
     return proxy_host, proxy_port
 
 async def handle_client_coroutine(reader, writer, routes):
-    """
-    Handles an individual client connection asynchronously by parsing the request,
-    determining the target backend, and forwarding the request.
+    # Process client request and forward it
 
-    :params reader (StreamReader): async reader.
-    :params writer (StreamWriter): async writer.
-    :params routes (dict): dictionary mapping hostnames and location.
-    """
     addr = writer.get_extra_info("peername")
 
     request_bytes = await reader.read(4096)
@@ -193,19 +151,12 @@ async def async_proxy_server(ip, port, routes):
 
 
 def run_proxy(ip, port, routes):
-    """
-    Starts the proxy server and listens for incoming connections. 
-    Uses asyncio event loop.
-    """
+    # Start the proxy using the asyncio loop
+
     asyncio.run(async_proxy_server(ip, port, routes))
 
 
 def create_proxy(ip, port, routes):
-    """
-    Entry point for launching the proxy server.
+    # Main entry point to launch the proxy
 
-    :params ip (str): IP address to bind the proxy server.
-    :params port (int): port number to listen on.
-    :params routes (dict): dictionary mapping hostnames and location.
-    """
     run_proxy(ip, port, routes)

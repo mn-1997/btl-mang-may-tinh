@@ -13,32 +13,15 @@
 """
 daemon.request
 ~~~~~~~~~~~~~~~~~
-
-This module provides a Request object to manage and persist
-request settings (cookies, auth, proxies).
+Handles parsing raw HTTP request strings into usable Python objects.
 """
 from .dictionary import CaseInsensitiveDict
 import json
 
 
 class Request():
-    """Parses a raw HTTP request string into structured parts.
-
-    After calling `prepare(raw_string)`, you can access:
-      - self.method  : "GET", "POST", etc.
-      - self.path    : "/login", "/get-list", etc.
-      - self.headers : CaseInsensitiveDict of all headers
-      - self.body    : the raw body string (everything after the blank line)
-      - self.hook    : the matched route handler function (or None)
-
-    Usage::
-
-      >>> req = Request()
-      >>> req.prepare(raw_http_string, routes)
-      >>> req.method
-      'POST'
-      >>> req.get_json()
-      {'username': 'alice', 'password': '123'}
+    """
+    Parses a raw HTTP request string into structured fields (method, path, headers, body).
     """
 
     __attrs__ = [
@@ -55,37 +38,21 @@ class Request():
     ]
 
     def __init__(self):
-        #: HTTP method (GET, POST, PUT, DELETE, etc.)
         self.method = None
-        #: HTTP URL path (e.g. "/login")
         self.url = None
-        #: Parsed headers as a case-insensitive dictionary
         self.headers = CaseInsensitiveDict()
-        #: URL path (same as url, kept for compatibility)
         self.path = None
-        #: Parsed cookies from the Cookie header
         self.cookies = {}
-        #: Request body as a raw string
         self.body = ""
-        #: Raw header section before parsing
         self._raw_headers = ""
-        #: Raw body section before parsing
         self._raw_body = ""
-        #: HTTP version string (e.g. "HTTP/1.1")
         self.version = None
-        #: Registered routes dict
         self.routes = {}
-        #: The matched handler function for this request's path
         self.hook = None
 
     def extract_request_line(self, request):
-        """Pull the method, path, and version from the first line.
+        # Get the method, path, and version from the first line
 
-        Example first line: "GET /index.html HTTP/1.1"
-
-        :param request (str): The full raw HTTP request string.
-        :rtype: tuple of (method, path, version) or (None, None, None)
-        """
         try:
             lines = request.splitlines()
             first_line = lines[0]
@@ -100,14 +67,8 @@ class Request():
         return method, path, version
 
     def prepare_headers(self, request):
-        """Parse the header lines into a case-insensitive dictionary.
+        # Parse the header lines into a dictionary
 
-        Each header line looks like: "Content-Type: application/json"
-        We split on the first ": " to get key and value.
-
-        :param request (str): The raw HTTP request string.
-        :rtype: CaseInsensitiveDict with all parsed headers.
-        """
         headers = CaseInsensitiveDict()
         lines = request.split('\r\n')
         # Skip the first line (request line) and process the rest
@@ -118,31 +79,16 @@ class Request():
         return headers
 
     def fetch_headers_body(self, request):
-        """Split the request into header section and body section.
+        # Separate headers from the body
 
-        HTTP requests have a blank line (\\r\\n\\r\\n) separating
-        headers from the body.
-
-        :param request (str): The full raw HTTP request string.
-        :rtype: tuple of (header_string, body_string)
-        """
         parts = request.split("\r\n\r\n", 1)
         _headers = parts[0]
         _body = parts[1] if len(parts) > 1 else ""
         return _headers, _body
 
     def prepare(self, request, routes=None):
-        """Parse the entire raw HTTP request into structured fields.
+        # Parse the entire raw HTTP request
 
-        This is the main entry point. It:
-        1. Extracts the request line (method, path, version)
-        2. Splits headers from body
-        3. Parses headers into a dictionary
-        4. Looks up the matching route handler (hook)
-
-        :param request (str): The full raw HTTP request string.
-        :param routes (dict): Route registry {(METHOD, path): handler_func}.
-        """
 
         # Step 1: Parse the first line (e.g. "POST /login HTTP/1.1")
         self.method, self.path, self.version = self.extract_request_line(request)
@@ -158,10 +104,10 @@ class Request():
         # Step 4: Store the body for later use by handlers
         self.body = self._raw_body
 
-        # Step 5: Parse cookies from the Cookie header if present
-        cookie_str = self.headers.get('cookie', '')
-        if cookie_str:
-            self.cookies = self._parse_cookies(cookie_str)
+        # Step 5: (Optional) Parse cookies
+        # cookie_str = self.headers.get('cookie', '')
+        # if cookie_str:
+        #     self.cookies = self._parse_cookies(cookie_str)
 
         # Step 6: Look up the matching route handler
         if routes and routes != {}:
@@ -171,13 +117,8 @@ class Request():
                 self.method, self.path, self.hook))
 
     def get_json(self):
-        """Parse the request body as JSON and return a Python dict.
+        # Parse body as JSON
 
-        This is the agreed-upon way for the app layer to read
-        JSON data sent from the frontend.
-
-        :rtype: dict or None if body is empty / invalid JSON.
-        """
         if not self.body:
             return None
         try:
@@ -186,13 +127,8 @@ class Request():
             return None
 
     def get_bearer_token(self):
-        """Extract the Bearer token from the Authorization header.
+        # Extract Bearer token from headers
 
-        Looks for: "Authorization: Bearer <token_string>"
-        Returns just the token string, or None if not present.
-
-        :rtype: str or None
-        """
         auth_header = self.headers.get('authorization', '')
         if auth_header.startswith('Bearer '):
             # Everything after "Bearer " is the token
@@ -200,12 +136,8 @@ class Request():
         return None
 
     def prepare_body(self, data, files, json_data=None):
-        """Prepare the request body and set Content-Length.
+        # Prepare request body and content length
 
-        :param data: Raw body data.
-        :param files: File attachments (not yet implemented).
-        :param json_data: JSON payload to serialize.
-        """
         if json_data is not None:
             self.body = json.dumps(json_data)
             self.headers['Content-Type'] = 'application/json'
@@ -214,21 +146,16 @@ class Request():
         self.prepare_content_length(self.body)
 
     def prepare_content_length(self, body):
-        """Set the Content-Length header based on body size.
+        # Calculate body size for header
 
-        :param body: The request body string.
-        """
         if body:
             self.headers["Content-Length"] = str(len(body))
         else:
             self.headers["Content-Length"] = "0"
 
     def prepare_auth(self, auth, url=""):
-        """Attach authentication credentials to the request.
+        # Add authentication info
 
-        :param auth: Tuple of (username, password) or a token string.
-        :param url: The target URL (unused for now).
-        """
         if isinstance(auth, tuple) and len(auth) == 2:
             # Basic auth — not used in this project but kept for compat
             username, password = auth
@@ -242,20 +169,13 @@ class Request():
             self.headers["Authorization"] = "Bearer {}".format(auth)
 
     def prepare_cookies(self, cookies):
-        """Set the Cookie header from a cookie string.
+        # Set cookie header
 
-        :param cookies (str): Formatted cookie string like "key1=val1; key2=val2".
-        """
         self.headers["Cookie"] = cookies
 
     def _parse_cookies(self, cookie_str):
-        """Parse a raw Cookie header string into a dictionary.
+        # Parse cookie string into dict
 
-        Example: "session=abc123; theme=dark" -> {"session": "abc123", "theme": "dark"}
-
-        :param cookie_str (str): The raw cookie string.
-        :rtype: dict
-        """
         cookies = {}
         for pair in cookie_str.split(';'):
             pair = pair.strip()

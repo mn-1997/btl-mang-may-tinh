@@ -13,11 +13,7 @@
 """
 daemon.httpadapter
 ~~~~~~~~~~~~~~~~~
-
-This module provides a http adapter object to manage and persist 
-http settings (headers, bodies). The adapter supports both
-raw URL paths and RESTful route definitions, and integrates with
-Request and Response objects to handle client-server communication.
+Handles translating raw TCP bytes into Request and Response objects.
 """
 
 from .request import Request
@@ -29,22 +25,7 @@ import inspect
 
 class HttpAdapter:
     """
-    A mutable :class:`HTTP adapter <HTTP adapter>` for managing client connections
-    and routing requests.
-
-    The `HttpAdapter` class encapsulates the logic for receiving HTTP requests,
-    dispatching them to appropriate route handlers, and constructing responses.
-    It supports RESTful routing via hooks and integrates with :class:`Request <Request>` 
-    and :class:`Response <Response>` objects for full request lifecycle management.
-
-    Attributes:
-        ip (str): IP address of the client.
-        port (int): Port number of the client.
-        conn (socket): Active socket connection.
-        connaddr (tuple): Address of the connected client.
-        routes (dict): Mapping of route paths to handler functions.
-        request (Request): Request object for parsing incoming data.
-        response (Response): Response object for building and sending replies.
+    Manages client connections and maps them to the right functions.
     """
 
     __attrs__ = [
@@ -58,15 +39,8 @@ class HttpAdapter:
     ]
 
     def __init__(self, ip, port, conn, connaddr, routes):
-        """
-        Initialize a new HttpAdapter instance.
+        # Save connection details and routes
 
-        :param ip (str): IP address of the client.
-        :param port (int): Port number of the client.
-        :param conn (socket): Active socket connection.
-        :param connaddr (tuple): Address of the connected client.
-        :param routes (dict): Mapping of route paths to handler functions.
-        """
 
         #: IP address.
         self.ip = ip
@@ -84,17 +58,8 @@ class HttpAdapter:
         self.response = Response()
 
     def handle_client(self, conn, addr, routes):
-        """
-        Handle an incoming client connection.
+        # Handle a standard blocking connection (legacy mode)
 
-        This method reads the request from the socket, prepares the request object,
-        invokes the appropriate route handler if available, builds the response,
-        and sends it back to the client.
-
-        :param conn (socket): The client socket connection.
-        :param addr (tuple): The client's address.
-        :param routes (dict): The route mapping for dispatching requests.
-        """
 
         # Connection handler.
         self.conn = conn        
@@ -131,16 +96,8 @@ class HttpAdapter:
         conn.close()
 
     async def handle_client_coroutine(self, reader, writer):
-        """
-        Handle an incoming client connection using stream reader writer asynchronously.
+        # Main handler for asynchronous connections
 
-        This method reads the request from the socket, prepares the request object,
-        invokes the appropriate route handler if available, builds the response,
-        and sends it back to the client.
-
-        :param reader: The stream reader.
-        :param writer: The stream writer.
-        """
         # Request handler
         req = self.request
         # Response handler
@@ -205,31 +162,22 @@ class HttpAdapter:
         writer.close()
 
 
-    @property
-    def extract_cookies(self, req, resp):
-        """
-        Build cookies from the :class:`Request <Request>` headers.
-
-        :param req:(Request) The :class:`Request <Request>` object.
-        :param resp: (Response) The res:class:`Response <Response>` object.
-        :rtype: cookies - A dictionary of cookie key-value pairs.
-        """
-        cookies = {}
-        for header in headers:
-            if header.startswith("Cookie:"):
-                cookie_str = header.split(":", 1)[1].strip()
-                for pair in cookie_str.split(";"):
-                    key, value = pair.strip().split("=")
-                    cookies[key] = value
-        return cookies
+    # @property
+    # def extract_cookies(self, req, resp):
+    #     # Parse cookies from headers
+    #
+    #     cookies = {}
+    #     for header in req.headers:
+    #         if header.startswith("Cookie:"):
+    #             cookie_str = header.split(":", 1)[1].strip()
+    #             for pair in cookie_str.split(";"):
+    #                 key, value = pair.strip().split("=")
+    #                 cookies[key] = value
+    #     return cookies
 
     def build_response(self, req, resp):
-        """Builds a :class:`Response <Response>` object 
+        # Create a Response object from request info
 
-        :param req: The :class:`Request <Request>` used to generate the response.
-        :param resp: The  response object.
-        :rtype: Response
-        """
         response = Response()
 
         # Set encoding.
@@ -243,7 +191,7 @@ class HttpAdapter:
             response.url = req.url
 
         # Add new cookies from the server.
-        response.cookies = extract_cookies(req)
+        # response.cookies = extract_cookies(req)
 
         # Give the Response some context.
         response.request = req
@@ -252,12 +200,8 @@ class HttpAdapter:
         return response
 
     def build_json_response(self, req, resp):
-        """Builds a :class:`Response <Response>` object from JSON data
+        # Create a JSON response
 
-        :param req: The :class:`Request <Request>` used to generate the response.
-        :param resp: The  response object.
-        :rtype: Response
-        """
         response = Response(req)
 
         # Set encoding.
@@ -305,26 +249,13 @@ class HttpAdapter:
 
 
     def add_headers(self, request):
-        """
-        Add headers to the request.
+        # Hook for subclasses to add extra headers
 
-        This method is intended to be overridden by subclasses to inject
-        custom headers. It does nothing by default.
-
-        
-        :param request: :class:`Request <Request>` to add headers to.
-        """
         pass
 
     def build_proxy_headers(self, proxy):
-        """Returns a dictionary of the headers to add to any request sent
-        through a proxy. 
+        # Add auth headers for proxy requests
 
-        :class:`HttpAdapter <HttpAdapter>`.
-
-        :param proxy: The url of the proxy being used for this request.
-        :rtype: dict
-        """
         headers = {}
         #
         # TODO: build your authentication here

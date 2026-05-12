@@ -15,20 +15,9 @@ from collections.abc import MutableMapping
 
 
 class CaseInsensitiveDict(MutableMapping):
-    """A dictionary where key lookups are case-insensitive.
-
-    Useful for HTTP headers, where 'Content-Type' and 'content-type'
-    should be treated as the same key.
-
-    Usage::
-
-      >>> headers = CaseInsensitiveDict()
-      >>> headers['Content-Type'] = 'text/html'
-      >>> headers['content-type']
-      'text/html'
-
-      >>> 'CONTENT-TYPE' in headers
-      True
+    """
+    A dictionary where keys aren't case-sensitive. 
+    Useful for HTTP headers (e.g., 'Content-Type' vs 'content-type').
     """
 
     def __init__(self, *args, **kwargs):
@@ -51,14 +40,16 @@ class CaseInsensitiveDict(MutableMapping):
         return len(self.store)
 
     def __contains__(self, key):
-        """Check if a key exists, ignoring case."""
+        # Check if key exists (ignores case)
+
         return key.lower() in self.store
 
     def __repr__(self):
         return str(self.store)
 
     def get(self, key, default=None):
-        """Return the value for key if it exists, else return default."""
+        # Safe lookup with a default value
+
         try:
             return self[key]
         except KeyError:

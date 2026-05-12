@@ -1,21 +1,14 @@
 import secrets
 import time
 
-# ---------------------------------------------------------
-# Simple In-Memory User Database
-# Real apps would use a database file or server.
-# ---------------------------------------------------------
+# User data (In-memory)
 USERS = {
     "alice": "123",
     "bob": "456",
     "charlie": "789",
 }
 
-# ---------------------------------------------------------
-# Active Tokens Dictionary
-# Maps a token string to user information and expiry time.
-# Format: { "token_abc...": {"username": "alice", "expires": 167...} }
-# ---------------------------------------------------------
+# Current session tokens
 ACTIVE_TOKENS = {}
 
 # Tokens expire after 1 hour (3600 seconds)
@@ -23,13 +16,8 @@ TOKEN_EXPIRY_SECONDS = 3600
 
 
 def register_user(username, password):
-    """
-    Add a new user to the system.
-    Returns True if successful, False if the user already exists.
+    # Create a new user account
 
-    :param username: The new login name.
-    :param password: The new password.
-    """
     if username in USERS:
         return False
     
@@ -38,15 +26,8 @@ def register_user(username, password):
 
 
 def authenticate(username, password):
-    """
-    Check if the username and password match our records.
-    If valid, generate and return a new Bearer token.
-    If invalid, return None.
+    # Check login details and return a token if correct
 
-    :param username: The user's login name.
-    :param password: The user's password.
-    :rtype: str (the token) or None
-    """
     # Check if the user exists and the password is correct
     if username in USERS and USERS[username] == password:
         return _generate_token(username)
@@ -54,13 +35,8 @@ def authenticate(username, password):
 
 
 def _generate_token(username):
-    """
-    Generate a secure random Bearer token for the user.
-    Stores it in ACTIVE_TOKENS with an expiration time.
+    # Generate a unique hex token with an expiry time
 
-    :param username: The user's name.
-    :rtype: str (the generated token)
-    """
     # Generate a random 32-byte hex string
     token = secrets.token_hex(32)
     
@@ -85,13 +61,8 @@ def _generate_token(username):
 
 
 def validate_token(token):
-    """
-    Check if a token is valid (exists and has not expired).
-    Returns the username if valid, otherwise None.
+    # Check if a token is still valid and not expired
 
-    :param token: The token string provided by the user.
-    :rtype: str (the username) or None
-    """
     # Check if we have this token in our active list
     if token not in ACTIVE_TOKENS:
         return None
@@ -109,12 +80,8 @@ def validate_token(token):
 
 
 def logout(token):
-    """
-    Log the user out by deleting their active token.
-    
-    :param token: The token string to invalidate.
-    :rtype: bool (True if successfully logged out, False if token wasn't valid)
-    """
+    # Delete a token to log out the user
+
     if token in ACTIVE_TOKENS:
         del ACTIVE_TOKENS[token]
         return True

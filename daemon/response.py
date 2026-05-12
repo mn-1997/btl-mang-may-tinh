@@ -13,13 +13,7 @@
 """
 daemon.response
 ~~~~~~~~~~~~~~~~~
-
-This module builds HTTP responses to send back to clients.
-
-It can:
-  - Serve static files (HTML, CSS, images) from disk
-  - Build JSON API responses (200 OK, 400 Bad Request, 401 Unauthorized, etc.)
-  - Attach CORS headers so browsers allow cross-origin requests
+Builds HTTP responses to send back to clients.
 """
 import datetime
 import json
@@ -43,17 +37,8 @@ CORS_HEADERS = {
 
 
 class Response():
-    """Builds and sends HTTP responses.
-
-    Two main usage patterns:
-    1. **File responses** — serve HTML/CSS/images from disk via build_response()
-    2. **JSON responses** — return API data via the static helper methods
-
-    Attributes:
-        status_code (int): HTTP status code (e.g., 200, 404).
-        headers (dict): Response headers.
-        _content (bytes): The response body as raw bytes.
-        _header (bytes): The formatted response header as raw bytes.
+    """
+    Builds and sends HTTP responses (both files and JSON).
     """
 
     __attrs__ = [
@@ -82,62 +67,28 @@ class Response():
         self._header = b""
         self._next = None
 
-        #: HTTP status code (e.g. 200, 404)
         self.status_code = None
-
-        #: Response headers dictionary
         self.headers = {}
-
-        #: URL of the response
         self.url = None
-
-        #: Text encoding (e.g. "utf-8")
         self.encoding = None
-
-        #: Redirect history
         self.history = []
-
-        #: Human-readable status reason (e.g. "OK", "Not Found")
         self.reason = None
-
-        #: Response cookies
-        self.cookies = CaseInsensitiveDict()
-
-        #: Time elapsed for the request
+        # self.cookies = CaseInsensitiveDict()
         self.elapsed = datetime.timedelta(0)
-
-        #: The original request that produced this response
         self.request = request
 
-    # ==============================================================
-    #  STATIC HELPERS — build complete HTTP response bytes
-    #  These are the main methods your route handlers will use.
-    # ==============================================================
 
     @staticmethod
     def build_json_ok(data):
-        """Build a 200 OK response with a JSON body.
+        # Success response (200 OK)
 
-        Use this for successful API responses like:
-          {"message": "Logged in successfully", "token": "abc123"}
-
-        :param data (dict): Python dict to serialize as JSON.
-        :rtype: bytes — the complete HTTP response ready to send.
-        """
         body = json.dumps(data)
         return Response._build_json_response(200, "OK", body)
 
     @staticmethod
     def build_json_error(status_code, message):
-        """Build an error response with a JSON body.
+        # Error response (400, 404, etc.)
 
-        Use this for 400 Bad Request, 404 Not Found, etc:
-          {"error": "Missing username field"}
-
-        :param status_code (int): The HTTP error code.
-        :param message (str): Human-readable error description.
-        :rtype: bytes
-        """
         body = json.dumps({"error": message})
         # Map common codes to their standard reason phrases
         reasons = {
@@ -153,14 +104,8 @@ class Response():
 
     @staticmethod
     def build_unauthorized(message="Authentication required"):
-        """Shortcut for 401 Unauthorized responses.
+        # 401 Unauthorized response
 
-        Automatically includes the WWW-Authenticate header
-        telling the client to use Bearer tokens.
-
-        :param message (str): Error detail.
-        :rtype: bytes
-        """
         body = json.dumps({"error": message})
         extra_headers = {
             "WWW-Authenticate": 'Bearer realm="asynaprous"',
@@ -170,29 +115,14 @@ class Response():
 
     @staticmethod
     def build_cors_preflight():
-        """Handle CORS preflight (OPTIONS) requests.
+        # CORS OPTIONS response
 
-        Browsers send an OPTIONS request before the actual request
-        when using custom headers like Authorization. This response
-        tells the browser "yes, you're allowed to proceed."
-
-        :rtype: bytes
-        """
         return Response._build_json_response(204, "No Content", "")
 
     @staticmethod
     def _build_json_response(status_code, reason, body, extra_headers=None):
-        """Internal helper that assembles a complete HTTP response string.
+        # Internal helper to assemble the HTTP response string
 
-        Combines the status line, standard headers, CORS headers,
-        any extra headers, and the body into a single byte string.
-
-        :param status_code (int): HTTP status code.
-        :param reason (str): Status reason phrase.
-        :param body (str): Response body string.
-        :param extra_headers (dict): Additional headers to include.
-        :rtype: bytes
-        """
         # Start with the status line
         status_line = "HTTP/1.1 {} {}".format(status_code, reason)
 
@@ -226,13 +156,8 @@ class Response():
     # ==============================================================
 
     def get_mime_type(self, path):
-        """Guess the MIME type of a file from its extension.
+        # Guess file type from extension
 
-        Examples: "index.html" -> "text/html", "style.css" -> "text/css"
-
-        :param path (str): File path or name.
-        :rtype: str — MIME type string.
-        """
         try:
             mime_type, _ = mimetypes.guess_type(path)
         except Exception:
@@ -240,17 +165,8 @@ class Response():
         return mime_type or 'application/octet-stream'
 
     def prepare_content_type(self, mime_type='text/html'):
-        """Set the Content-Type header and determine the file directory.
+        # Set Content-Type and find the right folder
 
-        Different MIME types are served from different directories:
-          - text/html  -> www/
-          - text/css   -> static/
-          - image/*    -> static/
-          - application/* -> apps/
-
-        :param mime_type (str): MIME type of the requested resource.
-        :rtype: str — base directory path.
-        """
         base_dir = ""
 
         # Make sure headers dict exists
@@ -287,12 +203,8 @@ class Response():
         return base_dir
 
     def build_content(self, path, base_dir):
-        """Read a file from disk and return its contents.
+        # Read file from disk
 
-        :param path (str): Relative path to the file.
-        :param base_dir (str): Directory where the file is located.
-        :rtype: tuple (content_length, content_bytes)
-        """
         filepath = os.path.join(base_dir, path.lstrip('/'))
 
         print("[Response] Serving file at {}".format(filepath))
@@ -305,14 +217,8 @@ class Response():
         return len(content), content
 
     def build_response_header(self, request):
-        """Build the HTTP response header lines as bytes.
+        # Build the HTTP header block
 
-        Creates a standard header block with Content-Type, Date,
-        Content-Length, CORS headers, etc.
-
-        :param request: The incoming Request object.
-        :rtype: bytes — encoded HTTP response header.
-        """
         # Collect all header key-value pairs
         headers = {
             "Content-Type": self.headers.get(
@@ -343,10 +249,8 @@ class Response():
         return fmt_header.encode('utf-8')
 
     def build_notfound(self):
-        """Build a 404 Not Found response for missing files.
+        # 404 response
 
-        :rtype: bytes
-        """
         return (
             "HTTP/1.1 404 Not Found\r\n"
             "Accept-Ranges: bytes\r\n"
@@ -359,18 +263,8 @@ class Response():
         ).encode('utf-8')
 
     def build_response(self, request, envelop_content=None):
-        """Build a full HTTP response for a file-serving request.
+        # Build response for a static file
 
-        This is the main method for serving static files. It:
-        1. Determines the MIME type from the file extension
-        2. Finds the file on disk
-        3. Reads the content
-        4. Constructs headers + body
-
-        :param request: The incoming Request object.
-        :param envelop_content: Optional pre-built content.
-        :rtype: bytes — the complete HTTP response.
-        """
         print("[Response] Building response for {}".format(request.path))
 
         path = request.path
