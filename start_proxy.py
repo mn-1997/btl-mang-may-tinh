@@ -17,22 +17,7 @@
 """
 start_proxy
 ~~~~~~~~~~~~~~~~~
-
-This module serves as the entry point for launching a proxy server using Python's socket framework.
-It parses command-line arguments to configure the server's IP address and port, reads virtual host
-definitions from a configuration file, and initializes the proxy server with routing information.
-
-Requirements:
---------------
-- socket: provide socket networking interface.
-- threading: enables concurrent client handling via threads.
-- argparse: parses command-line arguments for server configuration.
-- re: used for regular expression matching in configuration parsing
-- response: response utilities.
-- httpadapter: the class for handling HTTP requests.
-- urlparse: parses URLs to extract host and port information.
-- daemon.create_proxy: initializes and starts the proxy server.
-
+Entry point for starting the reverse proxy. It reads host mappings from a config file.
 """
 
 import socket
@@ -48,12 +33,8 @@ PROXY_PORT = 8080
 
 
 def parse_virtual_hosts(config_file):
-    """
-    Parses virtual host blocks from a config file.
+    # Read the virtual host settings from a file
 
-    :config_file (str): Path to the NGINX config file.
-    :rtype list of dict: Each dict contains 'listen'and 'server_name'.
-    """
 
     with open(config_file, 'r') as f:
         config_text = f.read()
@@ -80,19 +61,9 @@ def parse_virtual_hosts(config_file):
         else: #default policy is round_robin
             dist_policy_map = 'round-robin'
             
-        #
-        # @bksysnet: Build the mapping and policy
-        # TODO: this policy varies among scenarios 
-        #       the default policy is provided with one proxy_pass
-        #       In the multi alternatives of proxy_pass then
-        #       the policy is applied to identify the highes matching
-        #       proxy_pass
-        #
+        # Build the mapping based on number of backends found
         if len(proxy_map.get(host,[])) == 1:
             routes[host] = (proxy_map.get(host,[])[0], dist_policy_map)
-        # esle if:
-        #         TODO:  apply further policy matching here
-        #
         else:
             routes[host] = (proxy_map.get(host,[]), dist_policy_map)
 
@@ -102,16 +73,8 @@ def parse_virtual_hosts(config_file):
 
 
 if __name__ == "__main__":
-    """
-    Entry point for launching the proxy server.
+    # Start the proxy server
 
-    This block parses command-line arguments to determine the server's IP address
-    and port. It then calls `create_backend(ip, port)` to start the RESTful
-    application server.
-
-    :arg --server-ip (str): IP address to bind the server (default: 127.0.0.1).
-    :arg --server-port (int): Port number to bind the server (default: 9000).
-    """
 
     parser = argparse.ArgumentParser(prog='Proxy', description='', epilog='Proxy daemon')
     parser.add_argument('--server-ip', default='0.0.0.0')
