@@ -1,21 +1,95 @@
 <!doctype html>
-<html>
-<head>
-    <title>bksysnet@hcmut welcome</title>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AsynapRous – P2P Chat</title>
+    <link rel="stylesheet" href="../static/css/styles.css" />
+  </head>
+  <body>
+    <!-- ===== KHU VỰC XÁC THỰC ===== -->
+    <div id="auth-section">
+      <h2>AsynapRous – Đăng nhập mạng P2P</h2>
 
-    <meta charset="utf-8" />
-    <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="stylesheet" href="css/styles.css" />
-</head>
+      <div class="form-row">
+        <label for="tracker-ip">Tracker IP:</label>
+        <input type="text" id="tracker-ip" value="127.0.0.1" />
+      </div>
+      <div class="form-row">
+        <label for="tracker-port">Tracker Port:</label>
+        <input type="number" id="tracker-port" value="7000" />
+      </div>
+      <div class="form-row">
+        <label for="username">Tên đăng nhập:</label>
+        <input type="text" id="username" placeholder="vd: alice" />
+      </div>
+      <div class="form-row">
+        <label for="password">Mật khẩu:</label>
+        <input type="password" id="password" placeholder="••••••••" />
+      </div>
 
-<body>
-<div>
-    <h1>bksysnet@hcmut  Domain</h1>
-    <p>This domain is for use in illustrative examples in documents.
-    </p>
-  
-       <img src="images/welcome.png" alt="bksysnet at HCMUT" width="500" height="600">  
-</div>
-</body>
+      <div class="btn-row">
+        <button id="login-btn">Đăng nhập</button>
+        <button id="register-btn">Đăng ký</button>
+      </div>
+
+      <label id="auth-msg"></label>
+    </div>
+
+    <!-- ===== GIAO DIỆN CHAT (ẩn ban đầu) ===== -->
+    <div id="chat-section">
+      <!-- Thông báo tin nhắn mới -->
+      <div id="new-msg-banner">
+        <label id="new-msg-label">⚠ Có tin nhắn mới</label>
+        <button id="banner-close-btn">✕</button>
+      </div>
+
+      <div id="chat-layout">
+        <!-- DANH SÁCH KÊNH (Sidebar) -->
+        <div id="channel-panel">
+          <div id="channel-header">
+            <h3>Kênh &amp; Người dùng</h3>
+            <label>Người dùng: <strong id="logged-user"></strong></label>
+          </div>
+
+          <div id="channel-list">
+            <!-- Được inject bởi JS -->
+          </div>
+
+          <div id="channel-actions">
+            <button id="refresh-btn">↻ Làm mới</button>
+            <button id="logout-btn">Đăng xuất</button>
+          </div>
+        </div>
+
+        <!-- KHU VỰC TIN NHẮN CHÍNH -->
+        <div id="message-panel">
+          <div id="chat-header">
+            <label
+              >Đang chat với:
+              <strong id="chat-target-name">Broadcast (Tất cả)</strong></label
+            >
+          </div>
+
+          <!-- Cửa sổ tin nhắn có thanh cuộn -->
+          <div id="message-window">
+            <!-- Tin nhắn được inject bởi JS -->
+          </div>
+
+          <!-- Khu vực nhập liệu -->
+          <div id="input-area">
+            <input
+              type="text"
+              id="message-input"
+              placeholder="Nhập tin nhắn... (Enter để gửi)"
+              autocomplete="off"
+            />
+            <button id="send-btn">Gửi</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="/app.js"></script>
+  </body>
 </html>
