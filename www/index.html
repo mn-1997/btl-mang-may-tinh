@@ -1,3 +1,4 @@
+<!-- <<<<<<< HEAD
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,12 +6,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AsynapRous P2P Chat</title>
     <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@500;700&display=swap" rel="stylesheet">
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="/style.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@500;700&display=swap"
+    rel="stylesheet">
+<!-- Custom CSS -->
+<link rel="stylesheet" href="/style.css">
 </head>
+
 <body>
     <!-- Background Elements for Aesthetics -->
     <div class="bg-orb orb-1"></div>
@@ -22,12 +25,12 @@
         <div class="glass-card modal-content">
             <h1 class="logo-text">AsynapRous</h1>
             <p class="subtitle">Connect to the P2P Network</p>
-            
+
             <div class="input-group">
                 <label>Tracker IP</label>
                 <input type="text" id="tracker-ip" value="127.0.0.1">
             </div>
-            
+
             <div class="input-group">
                 <label>Tracker Port</label>
                 <input type="number" id="tracker-port" value="7000">
@@ -63,7 +66,7 @@
                     <span id="current-username">Logged In</span>
                 </div>
             </div>
-            
+
             <div class="peer-list-container">
                 <!-- Broadcast Channel -->
                 <div class="peer-item active" data-target="broadcast">
@@ -73,7 +76,7 @@
                         <span class="peer-status">Public Channel</span>
                     </div>
                 </div>
-                
+
                 <h3 class="section-title">Direct Messages</h3>
                 <div id="peer-list">
                     <!-- Peers will be injected here by JS -->
@@ -98,7 +101,8 @@
                 <form id="chat-form">
                     <input type="text" id="message-input" placeholder="Type a message..." autocomplete="off">
                     <button type="submit" class="send-btn">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
                             <line x1="22" y1="2" x2="11" y2="13"></line>
                             <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
                         </svg>
@@ -109,5 +113,98 @@
     </div>
 
     <script src="/app.js"></script>
+</body> -->
+=======
+<!doctype html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AsynapRous – P2P Chat</title>
+    <link rel="stylesheet" href="../static/css/styles.css" />
+</head>
+
+<body>
+    <!-- ===== KHU VỰC XÁC THỰC ===== -->
+    <div id="auth-section">
+        <h2>AsynapRous – Đăng nhập mạng P2P</h2>
+
+        <div class="form-row">
+            <label for="tracker-ip">Tracker IP:</label>
+            <input type="text" id="tracker-ip" value="127.0.0.1" />
+        </div>
+        <div class="form-row">
+            <label for="tracker-port">Tracker Port:</label>
+            <input type="number" id="tracker-port" value="7000" />
+        </div>
+        <div class="form-row">
+            <label for="username">Tên đăng nhập:</label>
+            <input type="text" id="username" placeholder="vd: alice" />
+        </div>
+        <div class="form-row">
+            <label for="password">Mật khẩu:</label>
+            <input type="password" id="password" placeholder="••••••••" />
+        </div>
+
+        <div class="btn-row">
+            <button id="login-btn">Đăng nhập</button>
+            <button id="register-btn">Đăng ký</button>
+        </div>
+
+        <label id="auth-msg"></label>
+    </div>
+
+    <!-- ===== GIAO DIỆN CHAT (ẩn ban đầu) ===== -->
+    <div id="chat-section">
+        <!-- Thông báo tin nhắn mới -->
+        <div id="new-msg-banner">
+            <label id="new-msg-label">⚠ Có tin nhắn mới</label>
+            <button id="banner-close-btn">✕</button>
+        </div>
+
+        <div id="chat-layout">
+            <!-- DANH SÁCH KÊNH (Sidebar) -->
+            <div id="channel-panel">
+                <div id="channel-header">
+                    <h3>Kênh &amp; Người dùng</h3>
+                    <label>Người dùng: <strong id="logged-user"></strong></label>
+                </div>
+
+                <div id="channel-list">
+                    <!-- Được inject bởi JS -->
+                </div>
+
+                <div id="channel-actions">
+                    <button id="refresh-btn">↻ Làm mới</button>
+                    <button id="logout-btn">Đăng xuất</button>
+                </div>
+            </div>
+
+            <!-- KHU VỰC TIN NHẮN CHÍNH -->
+            <div id="message-panel">
+                <div id="chat-header">
+                    <label>Đang chat với:
+                        <strong id="chat-target-name">Broadcast (Tất cả)</strong></label>
+                </div>
+
+                <!-- Cửa sổ tin nhắn có thanh cuộn -->
+                <div id="message-window">
+                    <!-- Tin nhắn được inject bởi JS -->
+                </div>
+
+                <!-- Khu vực nhập liệu -->
+                <div id="input-area">
+                    <input type="text" id="message-input" placeholder="Nhập tin nhắn... (Enter để gửi)"
+                        autocomplete="off" />
+                    <button id="send-btn">Gửi</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../static/app.js"></script>
 </body>
+>>>>>>> origin/frontend
+
 </html>
